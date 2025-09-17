@@ -17,7 +17,7 @@ ENV FLASK_APP=A3.py \
     FLASK_ENV=production
 
 # 暴露端口
-EXPOSE 5000
+EXPOSE 3333
 
 # 启动命令
 CMD ["python", "A3.py"]

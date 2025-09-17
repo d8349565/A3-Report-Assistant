@@ -240,9 +240,9 @@ def set_font_simsun(run):
 # -------------------------------------------------------------
 if __name__ == "__main__":
     ensure_api_key()
-    webbrowser.open("http://localhost:5000")
+    webbrowser.open("http://localhost:3333")
     if getattr(sys, "frozen", False):
         from waitress import serve
-        serve(app, host="0.0.0.0", port=5000)
+        serve(app, host="0.0.0.0", port=3333)
     else:
-        app.run(host="0.0.0.0", port=5000, debug=False)
+        app.run(host="0.0.0.0", port=3333, debug=False)
