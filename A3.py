@@ -1,8 +1,11 @@
 """
-A3 Report Assistant – Word Edition v0.3.1
+A3 Report Assistant – Word Edition v1.0.0
 ========================================
-* 输出 Word(docx)，兼容 DeepSeek API，保留 AI 检查功能。
-* 依赖：flask python-docx openai
+* 完整的管理员权限控制和配置管理系统
+* 支持AJAX无刷新文件下载和生成进度提示
+* 防重复点击机制和任务去重保护
+* 基于DeepSeek AI的智能A3报告生成
+* 依赖：flask python-docx openai waitress
 """
 
 from __future__ import annotations

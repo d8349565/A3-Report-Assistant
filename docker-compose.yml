@@ -15,24 +15,41 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       # 持久化输出文件
-      - ./output:/home/appuser/app/output
-      # 持久化日志
-      - ./logs:/home/appuser/app/logs
-      # 配置文件挂载（可选）
-      - ./config.py:/home/appuser/app/config.py:ro
+      - ./output:/app/output
+      # 持久化日志（如果应用生成日志文件）
+      - ./logs:/app/logs
+      # 配置文件挂载（只读，防止容器内修改宿主机文件）
+      - ./config.py:/app/config.py:ro
     networks:
       - a3-network
     labels:
       - "com.docker.compose.project=a3-assistant"
-      - "description=A3 Report Assistant Web Application"
+      - "description=A3 Report Assistant v1.0.0 - Smart Lean Improvement Report Generator"
+      - "version=1.0.0"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3333/"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:3333/', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
 networks:
   a3-network:
     driver: bridge
     name: a3-assistant-network
+
+# 可选：添加卷定义以便更好地管理持久化数据
+volumes:
+  a3-output:
+    driver: local
+  a3-logs:
+    driver: local
