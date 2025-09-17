@@ -18,6 +18,7 @@ from typing import Dict, List
 from flask import (
     Flask,
     request,
+    render_template,
     render_template_string,
     send_file,
     redirect,
@@ -69,12 +70,97 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY") or config.DEEPSEEK_API_KEY
 
 GUIDE_MAP = {g["id"]: g for g in GUIDE}
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.secret_key = config.APP_SECRET_KEY
 
 # -------------------------------------------------------------
 # Helper functions
 # -------------------------------------------------------------
+
+def reload_config():
+    """重新加载配置文件"""
+    import importlib
+    importlib.reload(config)
+    global GUIDE, GUIDE_MAP, DEEPSEEK_API_KEY
+    GUIDE = config.GUIDE
+    GUIDE_MAP = {g["id"]: g for g in GUIDE}
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY") or config.DEEPSEEK_API_KEY
+
+def save_config(new_config):
+    """保存配置到文件"""
+    try:
+        with open("config.py", "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # 更新基本配置
+        content = re.sub(
+            r'DEEPSEEK_API_KEY = ".*?"',
+            f'DEEPSEEK_API_KEY = "{new_config.get("deepseek_api_key", "")}"',
+            content
+        )
+        content = re.sub(
+            r'DEEPSEEK_BASE_URL = ".*?"',
+            f'DEEPSEEK_BASE_URL = "{new_config.get("deepseek_base_url", "")}"',
+            content
+        )
+        content = re.sub(
+            r'MODEL_NAME = ".*?"',
+            f'MODEL_NAME = "{new_config.get("model_name", "")}"',
+            content
+        )
+        content = re.sub(
+            r'DOC_FONT_NAME = ".*?"',
+            f'DOC_FONT_NAME = "{new_config.get("doc_font_name", "")}"',
+            content
+        )
+        content = re.sub(
+            r'DOC_TITLE_TEMPLATE = ".*?"',
+            f'DOC_TITLE_TEMPLATE = "{new_config.get("doc_title_template", "")}"',
+            content
+        )
+        
+        # 更新系统提示词
+        for key in ["default", "step_guidance", "validation", "optimization"]:
+            pattern = f'"{key}": """.*?"""'
+            prompt_key = f"system_prompt_{key}"
+            prompt_content = new_config.get(prompt_key, "").replace('"', '\\"')
+            replacement = f'"{key}": """{prompt_content}"""'
+            content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+        
+        # 更新A3步骤配置
+        step_ids = new_config.getlist("step_id[]") if "step_id[]" in new_config else []
+        if step_ids:
+            step_titles = new_config.getlist("step_title[]")
+            step_purposes = new_config.getlist("step_purpose[]")
+            step_tools = new_config.getlist("step_tools[]")
+            step_focuses = new_config.getlist("step_focus[]")
+            
+            guide_content = "GUIDE = [\n"
+            for i in range(len(step_ids)):
+                focus_escaped = step_focuses[i].replace('"', '\\"')
+                guide_content += f'''    {{
+        "id": "{step_ids[i]}",
+        "title": "{step_titles[i]}",
+        "purpose": "{step_purposes[i]}",
+        "tools": "{step_tools[i]}",
+        "focus": "{focus_escaped}",
+    }},\n'''
+            guide_content += "]"
+            
+            content = re.sub(
+                r'GUIDE = \[.*?\]',
+                guide_content,
+                content,
+                flags=re.DOTALL
+            )
+        
+        with open("config.py", "w", encoding="utf-8") as f:
+            f.write(content)
+        
+        return True
+    except Exception as e:
+        print(f"保存配置失败: {e}")
+        return False
 
 def sanitize_filename(text: str) -> str:
     return re.sub(r"[^\w\- ]", "", text).strip()[:40] or "A3Report"
@@ -151,8 +237,7 @@ def build_doc(topic: str, user_inputs: Dict[str, str], suggestions: Dict[str, st
 # Web templates
 # -------------------------------------------------------------
 
-# 从config导入HTML模板
-HTML = config.HTML_TEMPLATE
+# 现在使用外部模板文件，不再需要内嵌HTML
 
 # -------------------------------------------------------------
 # Routes
@@ -161,7 +246,28 @@ HTML = config.HTML_TEMPLATE
 @app.route("/")
 def index():
     step_ids_json = json.dumps([g["id"] for g in GUIDE])
-    return render_template_string(HTML, guide=GUIDE, step_ids=step_ids_json)
+    return render_template('index.html', guide=GUIDE, step_ids=step_ids_json)
+
+
+@app.route("/admin")
+def admin():
+    """管理员配置页面"""
+    return render_template('admin.html', config=config)
+
+
+@app.route("/admin", methods=["POST"])
+def admin_save():
+    """保存管理员配置"""
+    try:
+        if save_config(request.form):
+            reload_config()
+            flash("配置保存成功！")
+        else:
+            flash("配置保存失败，请检查输入内容。")
+    except Exception as e:
+        flash(f"保存配置时发生错误：{str(e)}")
+    
+    return redirect(url_for('admin'))
 
 
 @app.route("/validate", methods=["POST"])

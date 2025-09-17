@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="zh" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A3 助手 - 管理员配置</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --bs-font-sans-serif: -apple-system, "Microsoft YaHei", "SimHei", "Helvetica Neue", Arial, sans-serif;
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --warning-gradient: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+      --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      --hover-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+
+    body {
+      font-family: var(--bs-font-sans-serif);
+      line-height: 1.7;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+
+    .main-header {
+      background: var(--primary-gradient);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .main-header h1 {
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      margin-bottom: 0.5rem;
+    }
+
+    .config-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+      margin-bottom: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .config-card:hover {
+      box-shadow: var(--hover-shadow);
+      transform: translateY(-5px);
+    }
+
+    .card-header {
+      background: var(--primary-gradient);
+      color: white;
+      padding: 1.5rem;
+      border: none;
+    }
+
+    .card-header h4 {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    .form-control, .form-select {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: 25px;
+      padding: 0.75rem 2rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+      background: var(--success-gradient);
+      border: none;
+      border-radius: 25px;
+      padding: 0.75rem 2rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+    }
+
+    .btn-warning {
+      background: var(--warning-gradient);
+      border: none;
+      border-radius: 25px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-warning:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    .btn-outline-secondary {
+      border-radius: 25px;
+      padding: 0.75rem 2rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-outline-secondary:hover {
+      transform: translateY(-2px);
+    }
+
+    .step-item {
+      background: #f8f9fa;
+      border: 2px dashed #dee2e6;
+      border-radius: 15px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .step-item:hover {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .step-number {
+      background: var(--primary-gradient);
+      color: white;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 1rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .alert {
+      border: none;
+      border-radius: 15px;
+      padding: 1rem 1.5rem;
+    }
+
+    .back-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: white;
+      border: 2px solid #667eea;
+      color: #667eea;
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .back-link:hover {
+      background: #667eea;
+      color: white;
+      transform: scale(1.05);
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .main-header {
+        padding: 1.5rem 0;
+      }
+      
+      .card-body {
+        padding: 1.5rem;
+      }
+      
+      .back-link {
+        top: 15px;
+        left: 15px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">
+    <i class="bi bi-arrow-left me-1"></i>返回主页
+  </a>
+
+  <div class="main-header">
+    <div class="container">
+      <div class="text-center">
+        <h1><i class="bi bi-gear-fill me-3"></i>管理员配置</h1>
+        <p class="lead mb-0">配置 API、模型和系统参数</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container pb-5">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="bi bi-check-circle-fill me-2"></i>{{ messages[0] }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" id="configForm">
+      <!-- API 配置 -->
+      <div class="config-card">
+        <div class="card-header">
+          <h4><i class="bi bi-cloud me-2"></i>API 配置</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">DeepSeek API Key</label>
+              <input type="password" class="form-control" name="deepseek_api_key" 
+                     value="{{ config.DEEPSEEK_API_KEY }}" 
+                     placeholder="sk-xxxxxxxxxxxxxxxx">
+              <div class="form-text">用于访问 DeepSeek AI 服务</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">API Base URL</label>
+              <input type="url" class="form-control" name="deepseek_base_url" 
+                     value="{{ config.DEEPSEEK_BASE_URL }}" 
+                     placeholder="https://api.deepseek.com">
+              <div class="form-text">DeepSeek API 服务地址</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模型配置 -->
+      <div class="config-card">
+        <div class="card-header">
+          <h4><i class="bi bi-cpu me-2"></i>模型配置</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">模型名称</label>
+              <select class="form-select" name="model_name">
+                <option value="deepseek-chat" {% if config.MODEL_NAME == 'deepseek-chat' %}selected{% endif %}>
+                  deepseek-chat (标准模式)
+                </option>
+                <option value="deepseek-reasoner" {% if config.MODEL_NAME == 'deepseek-reasoner' %}selected{% endif %}>
+                  deepseek-reasoner (思考模式)
+                </option>
+              </select>
+              <div class="form-text">选择使用的 AI 模型，思考模式具有更强的推理能力</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">文档字体</label>
+              <input type="text" class="form-control" name="doc_font_name" 
+                     value="{{ config.DOC_FONT_NAME }}" 
+                     placeholder="宋体">
+              <div class="form-text">生成的 Word 文档使用的字体</div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">文档标题模板</label>
+            <input type="text" class="form-control" name="doc_title_template" 
+                   value="{{ config.DOC_TITLE_TEMPLATE }}" 
+                   placeholder="A3 报告优化 – {topic}">
+            <div class="form-text">生成文档的标题格式，{topic} 会被替换为实际主题</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 系统提示词配置 -->
+      <div class="config-card">
+        <div class="card-header">
+          <h4><i class="bi bi-chat-square-text me-2"></i>系统提示词配置</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">默认系统提示词</label>
+            <textarea class="form-control" name="system_prompt_default" rows="3" 
+                      placeholder="你是一名精通 A3 方法的精益顾问...">{{ config.SYSTEM_PROMPTS.default }}</textarea>
+            <div class="form-text">AI 的基本角色设定</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">步骤指导提示词</label>
+            <textarea class="form-control" name="system_prompt_step_guidance" rows="4" 
+                      placeholder="你是一名精通A3方法的精益顾问...">{{ config.SYSTEM_PROMPTS.step_guidance }}</textarea>
+            <div class="form-text">AI 在各步骤指导时的提示词模板，支持 {title}、{purpose}、{tools}、{focus} 参数</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">验证提示词</label>
+            <textarea class="form-control" name="system_prompt_validation" rows="3" 
+                      placeholder="以下是某 A3 报告已填写内容...">{{ config.SYSTEM_PROMPTS.validation }}</textarea>
+            <div class="form-text">AI 验证用户输入时的提示词模板，支持 {context}、{title} 参数</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">优化提示词</label>
+            <textarea class="form-control" name="system_prompt_optimization" rows="3" 
+                      placeholder="请在不改变原意的情况下...">{{ config.SYSTEM_PROMPTS.optimization }}</textarea>
+            <div class="form-text">AI 优化内容时的提示词模板，支持 {title}、{content} 参数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A3 步骤配置 -->
+      <div class="config-card">
+        <div class="card-header">
+          <h4><i class="bi bi-list-ol me-2"></i>A3 步骤配置</h4>
+        </div>
+        <div class="card-body">
+          <div id="steps-container">
+            {% for step in config.GUIDE %}
+            <div class="step-item" data-step-index="{{ loop.index0 }}">
+              <div class="step-header">
+                <div class="d-flex align-items-center">
+                  <div class="step-number">{{ loop.index }}</div>
+                  <h6 class="mb-0">步骤 {{ loop.index }}</h6>
+                </div>
+                <button type="button" class="btn btn-warning btn-sm delete-step">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label fw-bold">ID</label>
+                  <input type="text" class="form-control" name="step_id[]" 
+                         value="{{ step.id }}" placeholder="step1">
+                </div>
+                <div class="col-md-8 mb-3">
+                  <label class="form-label fw-bold">标题</label>
+                  <input type="text" class="form-control" name="step_title[]" 
+                         value="{{ step.title }}" placeholder="课题选择 / Select Topic">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">目的</label>
+                <input type="text" class="form-control" name="step_purpose[]" 
+                       value="{{ step.purpose }}" placeholder="明确课题及方向">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">工具</label>
+                <input type="text" class="form-control" name="step_tools[]" 
+                       value="{{ step.tools }}" placeholder="可以参考使用矩阵数据分析表">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">要点</label>
+                <textarea class="form-control" name="step_focus[]" rows="2" 
+                          placeholder="名词主体尽量1个，命名要使用动词+修饰词+名词结构...">{{ step.focus }}</textarea>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          
+          <div class="text-center mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="add-step">
+              <i class="bi bi-plus-circle me-2"></i>添加新步骤
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提交按钮 -->
+      <div class="text-center">
+        <button type="submit" class="btn btn-success btn-lg me-3" id="save-btn">
+          <i class="bi bi-check-circle me-2"></i>保存配置
+        </button>
+        <a href="/" class="btn btn-outline-secondary btn-lg">
+          <i class="bi bi-arrow-left me-2"></i>返回主页
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let stepIndex = {{ config.GUIDE|length }};
+
+    // 添加新步骤
+    document.getElementById('add-step').addEventListener('click', function() {
+      stepIndex++;
+      const container = document.getElementById('steps-container');
+      const stepHTML = `
+        <div class="step-item" data-step-index="${stepIndex - 1}">
+          <div class="step-header">
+            <div class="d-flex align-items-center">
+              <div class="step-number">${stepIndex}</div>
+              <h6 class="mb-0">步骤 ${stepIndex}</h6>
+            </div>
+            <button type="button" class="btn btn-warning btn-sm delete-step">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">ID</label>
+              <input type="text" class="form-control" name="step_id[]" 
+                     value="step${stepIndex}" placeholder="step${stepIndex}">
+            </div>
+            <div class="col-md-8 mb-3">
+              <label class="form-label fw-bold">标题</label>
+              <input type="text" class="form-control" name="step_title[]" 
+                     value="" placeholder="步骤标题">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">目的</label>
+            <input type="text" class="form-control" name="step_purpose[]" 
+                   value="" placeholder="步骤目的">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">工具</label>
+            <input type="text" class="form-control" name="step_tools[]" 
+                   value="" placeholder="推荐工具">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">要点</label>
+            <textarea class="form-control" name="step_focus[]" rows="2" 
+                      placeholder="关键要点"></textarea>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', stepHTML);
+      updateStepNumbers();
+    });
+
+    // 删除步骤
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.delete-step')) {
+        const stepItem = e.target.closest('.step-item');
+        if (document.querySelectorAll('.step-item').length > 1) {
+          stepItem.remove();
+          updateStepNumbers();
+        } else {
+          alert('至少需要保留一个步骤！');
+        }
+      }
+    });
+
+    // 更新步骤编号
+    function updateStepNumbers() {
+      const steps = document.querySelectorAll('.step-item');
+      steps.forEach((step, index) => {
+        const number = index + 1;
+        step.querySelector('.step-number').textContent = number;
+        step.querySelector('h6').textContent = `步骤 ${number}`;
+        step.dataset.stepIndex = index;
+      });
+      stepIndex = steps.length;
+    }
+
+    // 表单提交
+    document.getElementById('configForm').addEventListener('submit', function(e) {
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="loading-spinner"></span>保存中...';
+      
+      // 5秒后恢复按钮状态（防止网络问题导致按钮永久禁用）
+      setTimeout(() => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>保存配置';
+      }, 5000);
+    });
+  </script>
+</body>
+</html>
