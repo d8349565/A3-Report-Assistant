@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  a3-assistant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: a3-report-assistant
+    restart: unless-stopped
+    ports:
+      - "9998:5000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # 持久化输出文件
+      - ./output:/home/appuser/app/output
+      # 持久化日志
+      - ./logs:/home/appuser/app/logs
+      # 配置文件挂载（可选）
+      - ./config.py:/home/appuser/app/config.py:ro
+    networks:
+      - a3-network
+    labels:
+      - "com.docker.compose.project=a3-assistant"
+      - "description=A3 Report Assistant Web Application"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  a3-network:
+    driver: bridge
+    name: a3-assistant-network
