@@ -15,6 +15,7 @@ MODEL_NAME = "deepseek-chat"
 APP_SECRET_KEY = "A3-Assistant-Secret"
 OUTPUT_DIR_NAME = "output"
 ADMIN_PASSWORD = "admin123"  # 管理员密码，建议在生产环境中修改
+WEB_ACCESS_PASSWORD = "123456"  # 网页访问密码，控制前台页面访问权限
 
 # -------------------------------------------------------------
 # Document Configuration
@@ -28,21 +29,14 @@ DOC_TITLE_TEMPLATE = "A3 报告优化 – {topic}"
 SYSTEM_PROMPTS = {
     "default": "你是一名精通 A3方法的精益顾问，用简洁中文回复，注意段落换行。",
     "step_guidance": """你是一名精通A3方法的精益顾问，你需要严格按照A3报告每一步的目的、工具和要点进行指导。
-
-    当前步骤：{title}
-
-    目的：{purpose}
-
-    工具：{tools}
-
-    要点：{focus}
-
-    请用简洁中文回复。""",
+当前步骤：{title}
+目的：{purpose}
+工具：{tools}
+要点：{focus}
+请用简洁中文回复。""",
     "validation": """以下是某 A3 报告已填写内容（可能不完整）：
-
-    {context}
-
-    请作为精益顾问，判断《{title}》段落是否符合该步骤的目的、工具及逻辑要求，若不充分，指出缺口并给出改进建议，总字数尽可能少。""",
+{context}
+请作为精益顾问，判断《{title}》段落是否符合该步骤的目的、工具及逻辑要求，若不充分，指出缺口并给出改进建议，总字数尽可能少。""",
     "optimization": "请在不改变原意的情况下，优化下面这段《{title}》文本，使其更符合 A3 报告规范，输出 200 字以内改进建议：\n{content}"
 }
 

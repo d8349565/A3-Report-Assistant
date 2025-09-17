@@ -330,6 +330,29 @@ textarea.form-control:focus {
   text-decoration: none;
 }
 
+.logout-link {
+  position: fixed;
+  top: 20px;
+  right: 180px;
+  z-index: 1000;
+  background: white;
+  border: 2px solid #dc3545;
+  color: #dc3545;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.logout-link:hover {
+  background: #dc3545;
+  color: white;
+  transform: scale(1.05);
+  text-decoration: none;
+}
+
 
 
 @media (max-width: 768px) {
@@ -356,12 +379,22 @@ textarea.form-control:focus {
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
   }
+  
+  .logout-link {
+    top: 60px;
+    right: 15px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
 }
 </style>
 </head>
 <body>
 <a href="/admin" class="admin-link">
   <i class="bi bi-gear-fill me-1"></i>管理配置
+</a>
+<a href="/access/logout" class="logout-link">
+  <i class="bi bi-box-arrow-right me-1"></i>退出登录
 </a>
 
 <div class="main-header">

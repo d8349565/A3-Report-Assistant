@@ -84,6 +84,17 @@ generating_reports = set()
 # Helper functions
 # -------------------------------------------------------------
 
+def require_access(f):
+    """访问权限验证装饰器"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查是否已通过访问验证
+        if not session.get('access_granted'):
+            return redirect(url_for('access_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def reload_config():
     """重新加载配置文件"""
     import importlib
@@ -123,6 +134,11 @@ def save_config(new_config):
         content = re.sub(
             r'DOC_TITLE_TEMPLATE = ".*?"',
             f'DOC_TITLE_TEMPLATE = "{new_config.get("doc_title_template", "")}"',
+            content
+        )
+        content = re.sub(
+            r'WEB_ACCESS_PASSWORD = ".*?"',
+            f'WEB_ACCESS_PASSWORD = "{new_config.get("web_access_password", "")}"',
             content
         )
         
@@ -251,12 +267,41 @@ def build_doc(topic: str, user_inputs: Dict[str, str], suggestions: Dict[str, st
 # -------------------------------------------------------------
 
 @app.route("/")
+@require_access
 def index():
     step_ids_json = json.dumps([g["id"] for g in GUIDE])
     return render_template('index.html', guide=GUIDE, step_ids=step_ids_json)
 
 
+@app.route("/access")
+def access_login():
+    """网页访问密码登录页面"""
+    return render_template('access_login.html')
+
+
+@app.route("/access", methods=["POST"])
+def access_login_post():
+    """处理网页访问密码验证"""
+    password = request.form.get('password', '')
+    if password == config.WEB_ACCESS_PASSWORD:
+        session['access_granted'] = True
+        return redirect(url_for('index'))
+    else:
+        flash("访问密码错误，请重试。")
+        return redirect(url_for('access_login'))
+
+
+@app.route("/access/logout")
+def access_logout():
+    """退出访问权限"""
+    session.pop('access_granted', None)
+    session.pop('admin_logged_in', None)  # 同时清除管理员登录状态
+    flash("已安全退出。")
+    return redirect(url_for('access_login'))
+
+
 @app.route("/admin")
+@require_access
 def admin():
     """管理员配置页面"""
     # 检查是否已登录
@@ -266,6 +311,7 @@ def admin():
 
 
 @app.route("/admin/login")
+@require_access
 def admin_login():
     """管理员登录页面"""
     return render_template('admin_login.html')
@@ -293,6 +339,7 @@ def admin_logout():
 
 
 @app.route("/admin", methods=["POST"])
+@require_access
 def admin_save():
     """保存管理员配置"""
     # 检查是否已登录
@@ -312,6 +359,7 @@ def admin_save():
 
 
 @app.route("/validate", methods=["POST"])
+@require_access
 def validate():
     data = request.get_json(force=True)
     step_id = data.get("step_id")
@@ -345,6 +393,7 @@ def validate():
 
 
 @app.route("/generate", methods=["POST"])
+@require_access
 def generate():
     # 生成唯一的任务ID
     import hashlib
@@ -390,6 +439,7 @@ def generate():
 
 
 @app.route("/generate/status/<task_id>")
+@require_access
 def generate_status(task_id):
     """检查生成任务状态"""
     is_generating = task_id in generating_reports
