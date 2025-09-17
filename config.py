@@ -27,15 +27,10 @@ DOC_TITLE_TEMPLATE = "A3 报告优化 – {topic}"
 SYSTEM_PROMPTS = {
     "default": "你是一名精通 A3方法的精益顾问，用简洁中文回复，注意段落换行。",
     "step_guidance": """你是一名精通A3方法的精益顾问，你需要严格按照A3报告每一步的目的、工具和要点进行指导。
-
       当前步骤：{title}
-
       目的：{purpose}
-
       工具：{tools}
-
       要点：{focus}
-
       请用简洁中文回复。""",
     "validation": """以下是某 A3 报告已填写内容（可能不完整）：
 
