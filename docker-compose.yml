@@ -8,7 +8,7 @@ services:
     container_name: a3-report-assistant
     restart: unless-stopped
     ports:
-      - "3333:3333"
+      - "9998:9998"
     environment:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - FLASK_ENV=production
@@ -18,8 +18,7 @@ services:
       - ./output:/app/output
       # 持久化日志（如果应用生成日志文件）
       - ./logs:/app/logs
-      # 配置文件挂载（只读，防止容器内修改宿主机文件）
-      - ./config.py:/app/config.py:ro
+      # 配置文件已复制到镜像中，无需挂载避免权限问题
     networks:
       - a3-network
     labels:
@@ -27,20 +26,12 @@ services:
       - "description=A3 Report Assistant v1.0.0 - Smart Lean Improvement Report Generator"
       - "version=1.0.0"
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:3333/', timeout=5)"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:9998/', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
+
 
 networks:
   a3-network:

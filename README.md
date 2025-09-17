@@ -77,7 +77,7 @@ pip install -r requirements.txt
 python A3.py
 
 # 5. 访问应用
-# 浏览器打开 http://localhost:3333
+# 浏览器打开 http://localhost:9998
 ```
 
 #### 方式二：Docker部署
@@ -89,7 +89,7 @@ docker build -t a3-assistant .
 # 2. 运行容器
 docker run -d \
   --name a3-assistant \
-  -p 3333:3333 \
+  -p 9998:9998 \
   -e DEEPSEEK_API_KEY=your_api_key \
   -v $(pwd)/output:/app/output \
   a3-assistant
@@ -102,7 +102,7 @@ docker-compose up -d
 
 #### 1. 首次配置
 
-1. 访问 `http://localhost:3333`
+1. 访问 `http://localhost:9998`
 2. 点击右上角"管理配置"按钮
 3. 输入管理员密码：`admin123`
 4. 配置DeepSeek API Key和其他参数
