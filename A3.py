@@ -25,6 +25,7 @@ from flask import (
     url_for,
     flash,
     jsonify,
+    session,
 )
 import openai
 from docx import Document
@@ -72,6 +73,9 @@ GUIDE_MAP = {g["id"]: g for g in GUIDE}
 
 app = Flask(__name__, template_folder='templates')
 app.secret_key = config.APP_SECRET_KEY
+
+# 全局变量：存储正在生成报告的标识
+generating_reports = set()
 
 # -------------------------------------------------------------
 # Helper functions
@@ -252,12 +256,46 @@ def index():
 @app.route("/admin")
 def admin():
     """管理员配置页面"""
+    # 检查是否已登录
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
     return render_template('admin.html', config=config)
+
+
+@app.route("/admin/login")
+def admin_login():
+    """管理员登录页面"""
+    return render_template('admin_login.html')
+
+
+@app.route("/admin/login", methods=["POST"])
+def admin_login_post():
+    """处理管理员登录"""
+    password = request.form.get('password', '')
+    if password == config.ADMIN_PASSWORD:
+        session['admin_logged_in'] = True
+        flash("登录成功！")
+        return redirect(url_for('admin'))
+    else:
+        flash("密码错误，请重试。")
+        return redirect(url_for('admin_login'))
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    """管理员登出"""
+    session.pop('admin_logged_in', None)
+    flash("已安全登出。")
+    return redirect(url_for('index'))
 
 
 @app.route("/admin", methods=["POST"])
 def admin_save():
     """保存管理员配置"""
+    # 检查是否已登录
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
     try:
         if save_config(request.form):
             reload_config()
@@ -305,23 +343,54 @@ def validate():
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    user_inputs = {g["id"]: request.form.get(g["id"], "").strip() for g in GUIDE}
-    topic = user_inputs.get("step1", "A3_Topic")[:30]
+    # 生成唯一的任务ID
+    import hashlib
+    import time
+    task_data = f"{request.remote_addr}_{time.time()}"
+    task_id = hashlib.md5(task_data.encode()).hexdigest()[:12]
+    
+    # 检查是否已有任务在进行
+    if task_id in generating_reports:
+        return jsonify({"error": "报告生成中，请稍候..."}), 429
+    
+    # 标记任务开始
+    generating_reports.add(task_id)
+    
+    try:
+        user_inputs = {g["id"]: request.form.get(g["id"], "").strip() for g in GUIDE}
+        topic = user_inputs.get("step1", "A3_Topic")[:30]
 
-    suggestions: Dict[str, str] = {}
-    for st in GUIDE:
-        content = user_inputs.get(st["id"], "")
-        if not content:
-            suggestions[st["id"]] = "(用户未填写)"
-            continue
-        prompt = config.SYSTEM_PROMPTS["optimization"].format(
-            title=st['title'],
-            content=content
-        )
-        suggestions[st["id"]] = call_deepseek(prompt, step_id=st["id"])
+        suggestions: Dict[str, str] = {}
+        for st in GUIDE:
+            content = user_inputs.get(st["id"], "")
+            if not content:
+                suggestions[st["id"]] = "(用户未填写)"
+                continue
+            prompt = config.SYSTEM_PROMPTS["optimization"].format(
+                title=st['title'],
+                content=content
+            )
+            suggestions[st["id"]] = call_deepseek(prompt, step_id=st["id"])
 
-    path = build_doc(topic, user_inputs, suggestions)
-    return send_file(path, as_attachment=True)
+        path = build_doc(topic, user_inputs, suggestions)
+        
+        # 任务完成，移除标记
+        generating_reports.discard(task_id)
+        
+        return send_file(path, as_attachment=True)
+    
+    except Exception as e:
+        # 发生错误时也要移除标记
+        generating_reports.discard(task_id)
+        flash(f"生成报告时发生错误：{str(e)}")
+        return redirect(url_for('index'))
+
+
+@app.route("/generate/status/<task_id>")
+def generate_status(task_id):
+    """检查生成任务状态"""
+    is_generating = task_id in generating_reports
+    return jsonify({"generating": is_generating})
 
 # -------------------------------------------------------------
 # 新增多轮对话支持
