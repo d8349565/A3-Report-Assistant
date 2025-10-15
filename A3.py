@@ -49,16 +49,56 @@ def ensure_api_key():
         else:
             # 开发环境下保持原有交互式输入
             key = input("请输入 DeepSeek API Key：").strip()
-            # 写入 config.py
-            with open("config.py", "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            with open("config.py", "w", encoding="utf-8") as f:
-                for line in lines:
-                    if line.strip().startswith("DEEPSEEK_API_KEY"):
-                        f.write(f'DEEPSEEK_API_KEY = "{key}"\n')
-                    else:
-                        f.write(line)
-            print("API Key 已保存，请重新启动程序。")
+            
+            # 优先保存到 .env 文件
+            env_path = Path(__file__).parent / '.env'
+            if env_path.exists():
+                try:
+                    with open(env_path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                    
+                    updated = False
+                    for i, line in enumerate(lines):
+                        if line.strip() and not line.strip().startswith('#') and '=' in line:
+                            current_key = line.split('=', 1)[0].strip()
+                            if current_key == "DEEPSEEK_API_KEY":
+                                lines[i] = f"DEEPSEEK_API_KEY={key}\n"
+                                updated = True
+                                break
+                    
+                    if not updated:
+                        lines.append(f"\nDEEPSEEK_API_KEY={key}\n")
+                    
+                    with open(env_path, "w", encoding="utf-8") as f:
+                        f.writelines(lines)
+                    
+                    print("API Key 已保存到 .env 文件，请重新启动程序。")
+                except Exception as e:
+                    print(f"保存到 .env 文件失败: {e}")
+                    print("尝试保存到 config.py...")
+                    # 如果保存 .env 失败，回退到保存 config.py
+                    try:
+                        with open("config.py", "r", encoding="utf-8") as f:
+                            lines = f.readlines()
+                        with open("config.py", "w", encoding="utf-8") as f:
+                            for line in lines:
+                                if 'DEEPSEEK_API_KEY' in line and '=' in line:
+                                    f.write(f'DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "{key}")\n')
+                                else:
+                                    f.write(line)
+                        print("API Key 已保存到 config.py，请重新启动程序。")
+                    except Exception as e2:
+                        print(f"保存失败: {e2}")
+            else:
+                # 如果 .env 不存在，创建一个
+                try:
+                    with open(env_path, "w", encoding="utf-8") as f:
+                        f.write(f"# A3 Report Assistant Configuration\n")
+                        f.write(f"DEEPSEEK_API_KEY={key}\n")
+                    print("已创建 .env 文件并保存 API Key，请重新启动程序。")
+                except Exception as e:
+                    print(f"创建 .env 文件失败: {e}")
+            
             sys.exit(0)
 
 # -------------------------------------------------------------
@@ -98,57 +138,78 @@ def require_access(f):
 def reload_config():
     """重新加载配置文件"""
     import importlib
+    # 重新加载 .env 文件中的环境变量
+    config.load_env_file()
+    # 重新加载 config 模块
     importlib.reload(config)
     global GUIDE, GUIDE_MAP, DEEPSEEK_API_KEY
     GUIDE = config.GUIDE
     GUIDE_MAP = {g["id"]: g for g in GUIDE}
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY") or config.DEEPSEEK_API_KEY
 
-def save_config(new_config):
-    """保存配置到文件"""
+def save_config_to_env(key, value):
+    """更新 .env 文件中的单个配置项"""
+    env_path = Path(__file__).parent / '.env'
+    if not env_path.exists():
+        return False
+    
     try:
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        updated = False
+        for i, line in enumerate(lines):
+            if line.strip() and not line.strip().startswith('#') and '=' in line:
+                current_key = line.split('=', 1)[0].strip()
+                if current_key == key:
+                    lines[i] = f"{key}={value}\n"
+                    updated = True
+                    break
+        
+        # 如果配置项不存在，添加到文件末尾
+        if not updated:
+            lines.append(f"\n# Auto-added configuration\n{key}={value}\n")
+        
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(lines)
+        
+        # 更新当前进程的环境变量
+        os.environ[key] = value
+        return True
+    except Exception as e:
+        print(f"更新 .env 文件失败: {e}")
+        return False
+
+def save_config(new_config):
+    """保存配置到 .env 文件和 config.py"""
+    try:
+        # 1. 保存基本配置到 .env 文件
+        env_configs = {
+            "DEEPSEEK_API_KEY": new_config.get("deepseek_api_key", ""),
+            "DEEPSEEK_BASE_URL": new_config.get("deepseek_base_url", ""),
+            "MODEL_NAME": new_config.get("model_name", ""),
+            "DOC_FONT_NAME": new_config.get("doc_font_name", ""),
+            "DOC_TITLE_TEMPLATE": new_config.get("doc_title_template", ""),
+            "WEB_ACCESS_PASSWORD": new_config.get("web_access_password", ""),
+        }
+        
+        for key, value in env_configs.items():
+            if not save_config_to_env(key, value):
+                print(f"警告: 无法保存 {key} 到 .env 文件")
+        
+        # 2. 保存系统提示词和A3步骤到 config.py（这些不适合放在 .env）
         with open("config.py", "r", encoding="utf-8") as f:
             content = f.read()
-        
-        # 更新基本配置
-        content = re.sub(
-            r'DEEPSEEK_API_KEY = ".*?"',
-            f'DEEPSEEK_API_KEY = "{new_config.get("deepseek_api_key", "")}"',
-            content
-        )
-        content = re.sub(
-            r'DEEPSEEK_BASE_URL = ".*?"',
-            f'DEEPSEEK_BASE_URL = "{new_config.get("deepseek_base_url", "")}"',
-            content
-        )
-        content = re.sub(
-            r'MODEL_NAME = ".*?"',
-            f'MODEL_NAME = "{new_config.get("model_name", "")}"',
-            content
-        )
-        content = re.sub(
-            r'DOC_FONT_NAME = ".*?"',
-            f'DOC_FONT_NAME = "{new_config.get("doc_font_name", "")}"',
-            content
-        )
-        content = re.sub(
-            r'DOC_TITLE_TEMPLATE = ".*?"',
-            f'DOC_TITLE_TEMPLATE = "{new_config.get("doc_title_template", "")}"',
-            content
-        )
-        content = re.sub(
-            r'WEB_ACCESS_PASSWORD = ".*?"',
-            f'WEB_ACCESS_PASSWORD = "{new_config.get("web_access_password", "")}"',
-            content
-        )
         
         # 更新系统提示词
         for key in ["default", "step_guidance", "validation", "optimization"]:
             pattern = f'"{key}": """.*?"""'
             prompt_key = f"system_prompt_{key}"
-            prompt_content = new_config.get(prompt_key, "").replace('"', '\\"')
-            replacement = f'"{key}": """{prompt_content}"""'
-            content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+            prompt_content = new_config.get(prompt_key, "")
+            if prompt_content:  # 只有当提供了新内容时才更新
+                prompt_content = prompt_content.replace('"', '\\"')
+                replacement = f'"{key}": """{prompt_content}"""'
+                content = re.sub(pattern, replacement, content, flags=re.DOTALL)
         
         # 更新A3步骤配置
         step_ids = new_config.getlist("step_id[]") if "step_id[]" in new_config else []
@@ -468,9 +529,12 @@ def set_font_simsun(run):
 # -------------------------------------------------------------
 if __name__ == "__main__":
     ensure_api_key()
-    webbrowser.open("http://localhost:9998")
+    # 从配置读取主机和端口
+    host = config.HOST
+    port = config.PORT
+    webbrowser.open(f"http://localhost:{port}")
     if getattr(sys, "frozen", False):
         from waitress import serve
-        serve(app, host="0.0.0.0", port=9998)
+        serve(app, host=host, port=port)
     else:
-        app.run(host="0.0.0.0", port=9998, debug=False)
+        app.run(host=host, port=port, debug=False)
